@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Galería de Fotos</title>
+  <title>Galería de Fotos y Videos</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -61,17 +61,42 @@
       margin-bottom: 3rem;
     }
 
-    .gallery img {
+    .gallery .item {
+      position: relative;
       width: 100%;
-      height: 200px;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .gallery img, .gallery video {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       border-radius: 12px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       transition: transform 0.2s ease-in-out;
     }
 
-    .gallery img:hover {
+    .gallery .item:hover img,
+    .gallery .item:hover video {
       transform: scale(1.05);
+    }
+
+    .censored {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-radius: 12px;
     }
 
     footer {
@@ -83,16 +108,53 @@
       font-size: 0.9rem;
       margin-top: auto;
     }
+
+    /* Lightbox style */
+    .lightbox {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .lightbox img, .lightbox video {
+      max-width: 90%;
+      max-height: 80%;
+      margin: auto;
+    }
+
+    .lightbox.active {
+      display: flex;
+    }
+
+    .close-lightbox {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.7);
+      border: none;
+      padding: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+
   </style>
 </head>
 <body>
   <header>
-    <h1>📸 Mi Galería de Fotos</h1>
+    <h1>📸 BL ART AI</h1>
   </header>
 
   <section class="upload-section">
-    <input type="file" id="fileInput" accept="image/*" multiple>
-    <label for="fileInput">Subir imágenes</label>
+    <input type="file" id="fileInput" accept="image/*,video/*" multiple>
+    <label for="fileInput">Subir Fotos y Videos</label>
   </section>
 
   <section class="gallery" id="gallery"></section>
@@ -101,21 +163,68 @@
     Hecho con ❤️ y GitHub Pages
   </footer>
 
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="close-lightbox" id="closeLightbox">&times;</button>
+    <div id="lightboxContent"></div>
+  </div>
+
   <script>
     const fileInput = document.getElementById('fileInput');
     const gallery = document.getElementById('gallery');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxContent = document.getElementById('lightboxContent');
+    const closeLightbox = document.getElementById('closeLightbox');
 
+    // Cuando el archivo cambia (es decir, el usuario selecciona archivos)
     fileInput.addEventListener('change', (event) => {
       const files = event.target.files;
       for (let file of files) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          gallery.appendChild(img);
+          const item = document.createElement('div');
+          item.classList.add('item');
+          
+          const imgOrVideo = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
+          imgOrVideo.src = e.target.result;
+          imgOrVideo.alt = file.name;
+          imgOrVideo.setAttribute('data-src', e.target.result); // Necesario para lightbox
+
+          // Opción de censura
+          const censored = document.createElement('div');
+          censored.classList.add('censored');
+          censored.innerText = 'Censurado'; // Cambiar a un texto o candado
+
+          item.appendChild(imgOrVideo);
+          item.appendChild(censored);
+
+          // Mostrar en la galería
+          gallery.appendChild(item);
+
+          // Hacer clic en una imagen o video para abrir en lightbox
+          item.addEventListener('click', () => {
+            lightbox.classList.add('active');
+            if (file.type.startsWith('image')) {
+              const img = document.createElement('img');
+              img.src = e.target.result;
+              lightboxContent.innerHTML = ''; // Limpiar contenido anterior
+              lightboxContent.appendChild(img);
+            } else {
+              const video = document.createElement('video');
+              video.src = e.target.result;
+              video.controls = true;
+              lightboxContent.innerHTML = ''; // Limpiar contenido anterior
+              lightboxContent.appendChild(video);
+            }
+          });
         }
         reader.readAsDataURL(file);
       }
+    });
+
+    // Cerrar lightbox
+    closeLightbox.addEventListener('click', () => {
+      lightbox.classList.remove('active');
     });
   </script>
 </body>
